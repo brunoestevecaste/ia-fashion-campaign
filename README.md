@@ -1,37 +1,7 @@
 # Fashion Campaign Streamlit App
 
-Aplicacion Streamlit para generar shootings de moda con Gemini.
+Este proyecto es una aplicacion de generacion visual para campanas de moda que transforma una entrada simple (foto de prenda + direccion creativa) en un shooting editorial completo asistido por IA. El sistema recibe una fotografia real de la prenda, una descripcion del estilo deseado, una descripcion de la ubicacion y una descripcion fisica del modelo, y a partir de ello ejecuta un flujo automatizado que mantiene consistencia visual entre todas las imagenes producidas.
 
-## Requisitos
-- Python 3.10+
-- API Key de Google Gemini
+La aplicacion genera primero una referencia de modelo (si no existe una unica imagen de referencia), luego construye cuatro prompts creativos coherentes con la direccion artistica indicada, y finalmente produce cuatro imagenes finales en formato vertical con enfoque editorial. El resultado es un mini shooting de moda listo para exploracion creativa, presentacion interna o iteracion rapida de conceptos de campana, manteniendo la identidad de la prenda y del modelo en todas las tomas.
 
-## Ejecutar en local
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
-
-## Despliegue en Streamlit Community Cloud
-1. Sube este proyecto a un repositorio de GitHub.
-2. Entra en https://share.streamlit.io/ y pulsa **New app**.
-3. Selecciona tu repositorio, rama y archivo principal: `app.py`.
-4. Despliega la app.
-5. Cada usuario debe introducir su propia Google API Key en la interfaz.
-
-## Estructura minima del proyecto
-- `app.py`: interfaz Streamlit.
-- `script.py`: logica de generacion de imagenes.
-- `requirements.txt`: dependencias para despliegue.
-- `.streamlit/config.toml`: configuracion visual/servidor de Streamlit.
-- `.gitignore`: exclusiones para no subir archivos locales innecesarios.
-
-## Subir a GitHub (comandos)
-```bash
-git init
-git add .
-git commit -m "Prepare Streamlit app for deployment"
-git branch -M main
-git remote add origin <URL_DE_TU_REPO>
-git push -u origin main
-```
+El valor principal del proyecto es reducir de forma drástica el tiempo y el coste de preproduccion visual: permite pasar de una idea a propuestas visuales de alta calidad en minutos, sin depender de una sesion fotografica completa en la fase inicial. Tambien aporta consistencia, velocidad de prueba y capacidad de experimentar multiples direcciones narrativas con menos friccion, ayudando a equipos de marketing, branding y contenido a validar conceptos antes de invertir en produccion final.
