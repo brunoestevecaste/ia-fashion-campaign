@@ -33,6 +33,16 @@ def render_input_form() -> CampaignInputs:
         accept_multiple_files=False,
     )
 
+    st.markdown("### Modo de generacion")
+    render_mode = st.radio(
+        "Selecciona modo",
+        options=["Final", "Draft"],
+        horizontal=True,
+        index=0,
+        key="render_mode",
+        help="Final: 4 imagenes en 4K (maxima calidad). Draft: 2 imagenes en 1K (menor coste, iteracion rapida).",
+    )
+
     st.markdown("### Estilo de campana")
     style_mode = st.radio(
         "Modo de estilo",
@@ -111,6 +121,7 @@ def render_input_form() -> CampaignInputs:
     return CampaignInputs(
         api_key=api_key,
         garment_file=garment_file,
+        render_mode=render_mode,
         style_mode=style_mode,
         style_desc=style_desc,
         location_mode=location_mode,

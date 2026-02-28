@@ -1,22 +1,23 @@
 import base64
+import hashlib
 import os
 from typing import Callable, Optional
 
 from google.genai import types
 
 from campaign_core.constants import (
-    ANALYSIS_MODEL,
+    ANALYSIS_MODEL_FLASH,
+    ANALYSIS_MODEL_PRO,
     FINAL_ASPECT_RATIO,
     FINAL_IMAGE_SIZE,
     IMAGE_MODEL,
 )
 from campaign_core.gemini_client import (
     build_client,
-    generate_image_4k_via_rest,
+    generate_image_via_rest,
     resolve_api_key,
 )
 from campaign_core.image_utils import (
-    detect_mime_type,
     extract_image_bytes,
     extract_json,
     extract_text,
@@ -42,9 +43,6 @@ class FashionCampaignAI:
             return
         print(message)
 
-    def _detect_mime_type(self, image_path):
-        return detect_mime_type(image_path)
-
     def _extract_json(self, text):
         return extract_json(text)
 
@@ -64,12 +62,13 @@ class FashionCampaignAI:
             quality=quality,
         )
 
-    def _generate_image_4k_via_rest(self, parts, aspect_ratio=FINAL_ASPECT_RATIO):
-        return generate_image_4k_via_rest(
+    def _generate_image_via_rest(self, parts, aspect_ratio=FINAL_ASPECT_RATIO, image_size="4K"):
+        return generate_image_via_rest(
             api_key=self.api_key,
             image_model=IMAGE_MODEL,
             parts=parts,
             aspect_ratio=aspect_ratio,
+            image_size=image_size,
         )
 
     def generate_model_reference(self, model_desc, output_path="model_reference.png"):
@@ -112,23 +111,77 @@ class FashionCampaignAI:
         self._log(f"No habia imagenes en '{model_dir}'. Referencia generada: {generated_path}")
         return generated_path
 
+    def get_or_generate_cached_model_reference(
+        self,
+        model_desc,
+        cache_dir=".cache/model_refs",
+    ) -> str:
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_key = hashlib.sha256(
+            f"{IMAGE_MODEL}\n{model_desc.strip()}".encode("utf-8")
+        ).hexdigest()[:24]
+        cached_path = os.path.join(cache_dir, f"model_ref_{cache_key}.png")
+
+        if os.path.exists(cached_path):
+            self._log(f"Usando referencia de modelo cacheada: {cached_path}")
+            return cached_path
+
+        self._log("No existe cache de referencia de modelo. Generando y guardando en cache...")
+        self.generate_model_reference(model_desc, output_path=cached_path)
+        self._log(f"Referencia de modelo cacheada en: {cached_path}")
+        return cached_path
+
     def generate_shoot_prompts(self, style, location):
         self._log("Generando conceptos creativos para el shooting...")
 
         prompt = build_shoot_prompts_request(style, location)
+        flash_error = None
+
+        try:
+            return self._generate_shoot_prompts_with_model(
+                prompt=prompt,
+                model_name=ANALYSIS_MODEL_FLASH,
+            )
+        except Exception as exc:
+            flash_error = exc
+            self._log(
+                "El modelo flash no devolvio prompts validos. Reintentando con modelo pro..."
+            )
+
+        try:
+            return self._generate_shoot_prompts_with_model(
+                prompt=prompt,
+                model_name=ANALYSIS_MODEL_PRO,
+            )
+        except Exception as pro_error:
+            raise RuntimeError(
+                "No se pudieron generar prompts validos. "
+                f"Flash error: {flash_error} | Pro error: {pro_error}"
+            )
+
+    def _generate_shoot_prompts_with_model(self, prompt, model_name):
         response = self.client.models.generate_content(
-            model=ANALYSIS_MODEL,
+            model=model_name,
             contents=prompt,
         )
-
         result = self._extract_json(self._extract_text(response))
         prompts = result.get("prompts")
-
         if not isinstance(prompts, list) or len(prompts) != 4:
-            raise ValueError("El modelo no devolvio exactamente 4 prompts.")
+            raise ValueError(
+                f"El modelo {model_name} no devolvio exactamente 4 prompts."
+            )
         return prompts
 
-    def execute_shooting(self, prompts, garment_image_path, model_reference_path, output_dir="."):
+    def execute_shooting(
+        self,
+        prompts,
+        garment_image_path,
+        model_reference_path,
+        output_dir=".",
+        max_images=4,
+        output_size=FINAL_IMAGE_SIZE,
+        image_size="4K",
+    ):
         self._log("Iniciando sesion de fotos (generando imagenes finales)...")
         generated_files = []
         os.makedirs(output_dir, exist_ok=True)
@@ -140,8 +193,10 @@ class FashionCampaignAI:
             model_reference_path
         )
 
-        for i, prompt_text in enumerate(prompts):
-            self._log(f"   Generando foto {i + 1}/4")
+        selected_prompts = prompts[:max_images]
+        total_images = len(selected_prompts)
+        for i, prompt_text in enumerate(selected_prompts):
+            self._log(f"   Generando foto {i + 1}/{total_images}")
 
             final_instruction = build_final_image_instruction(prompt_text)
 
@@ -166,14 +221,16 @@ class FashionCampaignAI:
                         },
                         {"text": final_instruction},
                     ]
-                    image_bytes = self._generate_image_4k_via_rest(
-                        rest_parts, aspect_ratio=FINAL_ASPECT_RATIO
+                    image_bytes = self._generate_image_via_rest(
+                        rest_parts,
+                        aspect_ratio=FINAL_ASPECT_RATIO,
+                        image_size=image_size,
                     )
                     break
                 except Exception as exc:
                     last_error = exc
                     self._log(
-                        f"   Reintento {attempt}/3: fallo al generar imagen 4K para la foto {i + 1}."
+                        f"   Reintento {attempt}/3: fallo al generar imagen {image_size} para la foto {i + 1}."
                     )
 
             if image_bytes is None:
@@ -183,10 +240,9 @@ class FashionCampaignAI:
 
             output_file = os.path.join(output_dir, f"shooting_result_{i + 1}.png")
             self._save_square_png(
-                image_bytes, output_path=output_file, size=FINAL_IMAGE_SIZE
+                image_bytes, output_path=output_file, size=output_size
             )
             generated_files.append(output_file)
             self._log(f"   Guardada: {output_file}")
 
         return generated_files
-

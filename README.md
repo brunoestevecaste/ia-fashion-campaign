@@ -8,6 +8,7 @@ La aplicacion genera primero una referencia de modelo (si no existe una unica im
 
 En la interfaz puedes elegir estilos y ubicaciones desde presets optimizados (curados para calidad editorial) o escribir tus propios prompts personalizados para cada uno.
 Para el modelo, puedes seleccionar descripciones fisicas por defecto, escribir una descripcion personalizada o subir directamente una imagen de referencia.
+Tambien puedes elegir modo `Final` (4 imagenes 4K) o modo `Draft` (2 imagenes 1K) para iterar con menor coste.
 Al finalizar, puedes descargar cada imagen por separado o la campaña completa en un archivo ZIP.
 
 El valor principal del proyecto es reducir de forma drástica el tiempo y el coste de preproduccion visual: permite pasar de una idea a propuestas visuales de alta calidad en minutos, sin depender de una sesion fotografica completa en la fase inicial. Tambien aporta consistencia, velocidad de prueba y capacidad de experimentar multiples direcciones narrativas con menos friccion, ayudando a equipos de marketing, branding y contenido a validar conceptos antes de invertir en produccion final.
@@ -27,3 +28,9 @@ El valor principal del proyecto es reducir de forma drástica el tiempo y el cos
 - `campaign_core/image_utils.py`: utilidades de parsing y procesamiento de imagen.
 - `campaign_core/shooting_engine.py`: implementacion principal de `FashionCampaignAI`.
 - `campaign_core/constants.py`: constantes de modelos y configuracion global del motor.
+
+## Optimizaciones de coste incluidas
+
+- Estrategia `flash-first` para generar prompts y fallback automatico a `pro` si la salida no es valida.
+- Cache persistente de referencias de modelo por descripcion en `.cache/model_refs`.
+- Modo `Draft` para reducir llamadas y resolucion durante iteraciones creativas.

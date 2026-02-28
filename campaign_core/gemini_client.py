@@ -19,7 +19,7 @@ def build_client(api_key):
     return genai.Client(api_key=api_key)
 
 
-def generate_image_4k_via_rest(api_key, image_model, parts, aspect_ratio):
+def generate_image_via_rest(api_key, image_model, parts, aspect_ratio, image_size="4K"):
     url = (
         f"https://generativelanguage.googleapis.com/v1beta/models/"
         f"{image_model}:generateContent?key={api_key}"
@@ -30,7 +30,7 @@ def generate_image_4k_via_rest(api_key, image_model, parts, aspect_ratio):
             "responseModalities": ["IMAGE"],
             "imageConfig": {
                 "aspectRatio": aspect_ratio,
-                "imageSize": "4K",
+                "imageSize": image_size,
             },
         },
     }
@@ -38,7 +38,7 @@ def generate_image_4k_via_rest(api_key, image_model, parts, aspect_ratio):
     response = requests.post(url, json=payload, timeout=180)
     if not response.ok:
         raise RuntimeError(
-            f"Error REST {response.status_code} en generacion 4K: {response.text[:400]}"
+            f"Error REST {response.status_code} en generacion {image_size}: {response.text[:400]}"
         )
 
     data = response.json()
@@ -50,6 +50,15 @@ def generate_image_4k_via_rest(api_key, image_model, parts, aspect_ratio):
                 return base64.b64decode(inline_data["data"])
 
     raise RuntimeError(
-        f"La API REST no devolvio imagen 4K ({aspect_ratio}) en la respuesta."
+        f"La API REST no devolvio imagen {image_size} ({aspect_ratio}) en la respuesta."
     )
 
+
+def generate_image_4k_via_rest(api_key, image_model, parts, aspect_ratio):
+    return generate_image_via_rest(
+        api_key=api_key,
+        image_model=image_model,
+        parts=parts,
+        aspect_ratio=aspect_ratio,
+        image_size="4K",
+    )
