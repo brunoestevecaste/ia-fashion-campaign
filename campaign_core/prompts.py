@@ -28,13 +28,6 @@ The final generation system will receive:
 1) A garment reference photo.
 2) A single model reference photo.
 
-CONSISTENCY PRIORITY (CRITICAL):
-- Treat model identity consistency as the highest priority across all 4 prompts.
-- Treat garment consistency as the highest priority across all 4 prompts.
-- Do NOT suggest changing garment design, color, fit, layers, or key materials.
-- Do NOT suggest changing face identity, hairstyle, hair color, body type, or age.
-- Any creative variation must come from camera, pose, framing, mood, and environment only.
-
 So your prompts must focus on scene direction only:
 - composition
 - camera language
@@ -96,7 +89,6 @@ Hard constraints:
   - The model must remain the exact same person as MODEL_REFERENCE in all facial and physical identity traits.
   - The garment must remain exactly the same item as GARMENT_REFERENCE with no redesign or substitution.
   - No wardrobe swap, no accessory that hides garment structure, and no identity drift.
-- Keep the same garment and same model identity from references.
 - Output must be square (1:1), native 4K (4096x4096).
 - No text, logo, watermark, or frame.
 - Strictly hyperrealistic quality, suitable for a top-tier fashion magazine.
