@@ -12,9 +12,10 @@ import requests
 # --- CONFIGURACION ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-ANALYSIS_MODEL = "gemini-3-flash-preview"
+ANALYSIS_MODEL = "gemini-3-pro-preview"
 IMAGE_MODEL = "gemini-3-pro-image-preview"
 FINAL_IMAGE_SIZE = 4096
+FINAL_ASPECT_RATIO = "1:1"
 
 
 class FashionCampaignAI:
@@ -116,7 +117,7 @@ class FashionCampaignAI:
         image.save(buffer, format="JPEG", quality=quality, optimize=True)
         return buffer.getvalue(), "image/jpeg"
 
-    def _generate_image_4k_via_rest(self, parts):
+    def _generate_image_4k_via_rest(self, parts, aspect_ratio=FINAL_ASPECT_RATIO):
         url = (
             f"https://generativelanguage.googleapis.com/v1beta/models/"
             f"{IMAGE_MODEL}:generateContent?key={self.api_key}"
@@ -126,7 +127,7 @@ class FashionCampaignAI:
             "generationConfig": {
                 "responseModalities": ["IMAGE"],
                 "imageConfig": {
-                    "aspectRatio": "9:16",
+                    "aspectRatio": aspect_ratio,
                     "imageSize": "4K",
                 },
             },
@@ -147,7 +148,7 @@ class FashionCampaignAI:
                     return base64.b64decode(inline_data["data"])
 
         raise RuntimeError(
-            "La API REST no devolvio imagen 4K en la respuesta."
+            f"La API REST no devolvio imagen 4K ({aspect_ratio}) en la respuesta."
         )
 
     def generate_model_reference(self, model_desc, output_path="model_reference.png"):
@@ -164,7 +165,7 @@ Requirements:
 - Neutral expression, even studio lighting, clean plain background.
 - No dramatic pose, no accessories covering face, no text or watermark.
 - Fashion casting style, realistic skin texture.
-- Composition (9:16).
+- Composition (1:1).
 """
 
         response = self.client.models.generate_content(
@@ -207,14 +208,14 @@ Requirements:
         self._log("Generando conceptos creativos para el shooting...")
 
         prompt = f"""
-You are a world-class fashion art director.
+You are a world-class high-fashion creative director and Vogue-level editorial photographer.
 
 CAMPAIGN INPUT:
 - Style: {style}
 - Location: {location}
 
 TASK:
-Generate exactly 4 highly detailed image prompts in ENGLISH for a fashion campaign.
+Generate exactly 4 highly detailed image prompts in ENGLISH for a high-fashion photorealistic campaign.
 The final generation system will receive:
 1) A garment reference photo.
 2) A single model reference photo.
@@ -225,17 +226,21 @@ So your prompts must focus on scene direction only:
 - pose
 - mood
 - lighting
+- editorial storytelling
+- background atmosphere
 
-All 4 prompts must be set on a high rooftop at sunset in a dense urban skyline.
-Use only rooftop-related environments such as:
-- open-air skyscraper rooftops
-- rooftop terraces with parapets and concrete textures
-- technical rooftop zones with railings and urban service structures
+Creative constraints:
+- Respect and amplify the user inputs for style and location.
+- Keep all 4 prompts visually coherent as one campaign narrative.
+- Every prompt must target SQUARE framing (1:1) and print-ready 4K detail.
+- The look must be strictly photorealistic (no illustration, no CGI, no surreal distortion).
+- Include premium fashion-photography language: lens choice, camera height/angle, body language,
+  fabric behavior, skin and hair micro-texture, and nuanced lighting behavior.
 
 Visual direction must be consistent across all prompts:
 - high-fashion streetwear attitude
-- cinematic golden-hour light with warm highlights and long shadows
-- controlled contrast and realistic atmospheric depth
+- cinematic editorial lighting with sculpted highlights and dimensional shadows
+- controlled contrast, realistic atmospheric depth, and refined color grading
 - high micro-detail in skin, fabrics, hair, and architectural textures
 - strictly hyperrealistic fashion photography (no stylized or illustrative look)
 - premium high-fashion editorial quality suitable for print magazine
@@ -245,6 +250,14 @@ Use these mandatory variations:
 2) medium shot + seated pose
 3) low-angle shot + static pose
 4) detail shot + in-motion pose
+
+For each prompt, explicitly include:
+- framing and shot scale
+- focal length (in mm)
+- camera perspective
+- lighting direction and quality
+- emotional tone
+- environment cues derived from the location input
 
 Return ONLY valid JSON using this exact format:
 {{
@@ -289,10 +302,11 @@ Generate ONE photorealistic high-fashion campaign image using this direction:
 
 Hard constraints:
 - Keep the same garment and same model identity from references.
-- Output must be vertical (9:16).
+- Output must be square (1:1), native 4K (4096x4096).
 - No text, logo, watermark, or frame.
 - Strictly hyperrealistic quality, suitable for a top-tier fashion magazine.
-- High-fashion streetwear rooftop-at-sunset atmosphere with cinematic golden-hour light and realistic urban depth.
+- Preserve physically plausible anatomy, realistic skin detail, and true-to-life fabric rendering.
+- Maintain a premium high-fashion editorial atmosphere aligned with the prompt direction.
 """
 
             image_bytes = None
@@ -316,7 +330,9 @@ Hard constraints:
                         },
                         {"text": final_instruction},
                     ]
-                    image_bytes = self._generate_image_4k_via_rest(rest_parts)
+                    image_bytes = self._generate_image_4k_via_rest(
+                        rest_parts, aspect_ratio=FINAL_ASPECT_RATIO
+                    )
                     break
                 except Exception as exc:
                     last_error = exc

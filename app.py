@@ -6,8 +6,8 @@ import streamlit as st
 from script import FashionCampaignAI
 
 DEFAULT_STYLE = (
-    "Hyperrealistic high-fashion streetwear campaign with a premium editorial direction; "
-    "cinematic golden-hour color grading, elevated urban styling, and refined magazine-quality composition. "
+    "Photorealistic high-fashion campaign with luxury editorial direction, "
+    "print-magazine quality art direction, refined cinematic color grading, and elegant visual storytelling. "
     "Mood: confident, modern, and sophisticated."
 )
 
@@ -145,7 +145,7 @@ st.markdown(
 )
 
 st.title("Fashion Campaign Shooting AI")
-st.caption("Genera 4 imagenes editoriales a partir de la prenda y tus indicaciones creativas.")
+st.caption("Genera 4 imagenes editoriales photorealistas en formato cuadrado 4K.")
 
 with st.form("campaign_form"):
     api_key = st.text_input(
