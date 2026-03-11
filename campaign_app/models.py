@@ -23,3 +23,4 @@ class CampaignResult:
     prompts: list[str]
     model_ref_bytes: bytes
     result_images: list[bytes]
+    zip_bytes: bytes = b""

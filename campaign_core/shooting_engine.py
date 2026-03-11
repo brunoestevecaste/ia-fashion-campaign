@@ -1,4 +1,5 @@
 import base64
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import hashlib
 import os
 from typing import Callable, Optional
@@ -131,16 +132,17 @@ class FashionCampaignAI:
         self._log(f"Referencia de modelo cacheada en: {cached_path}")
         return cached_path
 
-    def generate_shoot_prompts(self, style, location):
+    def generate_shoot_prompts(self, style, location, prompt_count=4):
         self._log("Generando conceptos creativos para el shooting...")
 
-        prompt = build_shoot_prompts_request(style, location)
+        prompt = build_shoot_prompts_request(style, location, prompt_count=prompt_count)
         flash_error = None
 
         try:
             return self._generate_shoot_prompts_with_model(
                 prompt=prompt,
                 model_name=ANALYSIS_MODEL_FLASH,
+                expected_prompt_count=prompt_count,
             )
         except Exception as exc:
             flash_error = exc
@@ -152,6 +154,7 @@ class FashionCampaignAI:
             return self._generate_shoot_prompts_with_model(
                 prompt=prompt,
                 model_name=ANALYSIS_MODEL_PRO,
+                expected_prompt_count=prompt_count,
             )
         except Exception as pro_error:
             raise RuntimeError(
@@ -159,18 +162,26 @@ class FashionCampaignAI:
                 f"Flash error: {flash_error} | Pro error: {pro_error}"
             )
 
-    def _generate_shoot_prompts_with_model(self, prompt, model_name):
+    def _generate_shoot_prompts_with_model(self, prompt, model_name, expected_prompt_count):
         response = self.client.models.generate_content(
             model=model_name,
             contents=prompt,
         )
         result = self._extract_json(self._extract_text(response))
         prompts = result.get("prompts")
-        if not isinstance(prompts, list) or len(prompts) != 4:
+        if not isinstance(prompts, list):
             raise ValueError(
-                f"El modelo {model_name} no devolvio exactamente 4 prompts."
+                f"El modelo {model_name} no devolvio una lista de prompts valida."
             )
-        return prompts
+        if len(prompts) < expected_prompt_count:
+            raise ValueError(
+                f"El modelo {model_name} no devolvio al menos {expected_prompt_count} prompts."
+            )
+        if len(prompts) > expected_prompt_count:
+            self._log(
+                f"El modelo {model_name} devolvio {len(prompts)} prompts; se usaran los primeros {expected_prompt_count}."
+            )
+        return prompts[:expected_prompt_count]
 
     def execute_shooting(
         self,
@@ -181,9 +192,9 @@ class FashionCampaignAI:
         max_images=4,
         output_size=FINAL_IMAGE_SIZE,
         image_size="4K",
+        parallel_workers=None,
     ):
         self._log("Iniciando sesion de fotos (generando imagenes finales)...")
-        generated_files = []
         os.makedirs(output_dir, exist_ok=True)
 
         garment_bytes, garment_mime = self._prepare_reference_image_jpeg(
@@ -192,57 +203,79 @@ class FashionCampaignAI:
         model_bytes, model_mime = self._prepare_reference_image_jpeg(
             model_reference_path
         )
+        garment_b64 = base64.b64encode(garment_bytes).decode("utf-8")
+        model_b64 = base64.b64encode(model_bytes).decode("utf-8")
 
         selected_prompts = prompts[:max_images]
         total_images = len(selected_prompts)
-        for i, prompt_text in enumerate(selected_prompts):
-            self._log(f"   Generando foto {i + 1}/{total_images}")
+        if total_images == 0:
+            return []
 
+        if parallel_workers is None:
+            worker_count = 1 if total_images == 1 else max(2, min(4, total_images))
+        else:
+            bounded_workers = max(1, min(4, parallel_workers, total_images))
+            worker_count = bounded_workers if total_images == 1 else max(2, bounded_workers)
+        self._log(f"Generacion paralela activada: {worker_count} worker(s).")
+
+        generated_files: list[Optional[str]] = [None] * total_images
+
+        def _generate_and_save(index: int, prompt_text: str):
             final_instruction = build_final_image_instruction(prompt_text)
-
-            image_bytes = None
-            last_error = None
-            for attempt in range(1, 4):
-                try:
-                    rest_parts = [
-                        {"text": "GARMENT_REFERENCE"},
-                        {
-                            "inlineData": {
-                                "mimeType": garment_mime,
-                                "data": base64.b64encode(garment_bytes).decode("utf-8"),
-                            }
-                        },
-                        {"text": "MODEL_REFERENCE"},
-                        {
-                            "inlineData": {
-                                "mimeType": model_mime,
-                                "data": base64.b64encode(model_bytes).decode("utf-8"),
-                            }
-                        },
-                        {"text": final_instruction},
-                    ]
-                    image_bytes = self._generate_image_via_rest(
-                        rest_parts,
-                        aspect_ratio=FINAL_ASPECT_RATIO,
-                        image_size=image_size,
-                    )
-                    break
-                except Exception as exc:
-                    last_error = exc
-                    self._log(
-                        f"   Reintento {attempt}/3: fallo al generar imagen {image_size} para la foto {i + 1}."
-                    )
-
-            if image_bytes is None:
-                raise RuntimeError(
-                    f"No se pudo generar la foto {i + 1} tras 3 intentos. {last_error}"
-                )
-
-            output_file = os.path.join(output_dir, f"shooting_result_{i + 1}.png")
+            rest_parts = [
+                {"text": "GARMENT_REFERENCE"},
+                {
+                    "inlineData": {
+                        "mimeType": garment_mime,
+                        "data": garment_b64,
+                    }
+                },
+                {"text": "MODEL_REFERENCE"},
+                {
+                    "inlineData": {
+                        "mimeType": model_mime,
+                        "data": model_b64,
+                    }
+                },
+                {"text": final_instruction},
+            ]
+            image_bytes = self._generate_image_via_rest(
+                rest_parts,
+                aspect_ratio=FINAL_ASPECT_RATIO,
+                image_size=image_size,
+            )
+            output_file = os.path.join(output_dir, f"shooting_result_{index + 1}.png")
             self._save_square_png(
                 image_bytes, output_path=output_file, size=output_size
             )
-            generated_files.append(output_file)
-            self._log(f"   Guardada: {output_file}")
+            return index, output_file
 
-        return generated_files
+        if worker_count == 1:
+            for idx, prompt_text in enumerate(selected_prompts):
+                self._log(f"   Generando foto {idx + 1}/{total_images}")
+                _, output_path = _generate_and_save(idx, prompt_text)
+                generated_files[idx] = output_path
+                self._log(f"   Guardada: {output_path}")
+            return [path for path in generated_files if path is not None]
+
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            future_to_index = {}
+            for idx, prompt_text in enumerate(selected_prompts):
+                self._log(f"   Encolada foto {idx + 1}/{total_images}")
+                future = executor.submit(_generate_and_save, idx, prompt_text)
+                future_to_index[future] = idx
+
+            for future in as_completed(future_to_index):
+                idx = future_to_index[future]
+                try:
+                    _, output_path = future.result()
+                except Exception as exc:
+                    for pending_future in future_to_index:
+                        pending_future.cancel()
+                    raise RuntimeError(
+                        f"No se pudo generar la foto {idx + 1}/{total_images}. {exc}"
+                    ) from exc
+                generated_files[idx] = output_path
+                self._log(f"   Guardada foto {idx + 1}/{total_images}: {output_path}")
+
+        return [path for path in generated_files if path is not None]

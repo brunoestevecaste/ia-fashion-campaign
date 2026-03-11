@@ -3,6 +3,7 @@ import tempfile
 from typing import Callable
 
 from campaign_app.models import CampaignInputs, CampaignResult
+from campaign_app.zip_utils import build_campaign_zip
 from campaign_core.constants import DEFAULT_RENDER_MODE, RENDER_MODE_CONFIG
 from script import FashionCampaignAI
 
@@ -41,7 +42,11 @@ def run_campaign_pipeline(
                 cache_dir=os.path.join(".cache", "model_refs"),
             )
 
-        prompts = bot.generate_shoot_prompts(inputs.style_desc, inputs.location_desc)
+        prompts = bot.generate_shoot_prompts(
+            inputs.style_desc,
+            inputs.location_desc,
+            prompt_count=render_cfg["max_images"],
+        )
         prompts_for_render = prompts[: render_cfg["max_images"]]
         generated_paths = bot.execute_shooting(
             prompts=prompts_for_render,
@@ -60,9 +65,11 @@ def run_campaign_pipeline(
         for path in generated_paths:
             with open(path, "rb") as image_file:
                 result_images.append(image_file.read())
+        zip_bytes = build_campaign_zip(result_images)
 
     return CampaignResult(
         prompts=prompts_for_render,
         model_ref_bytes=model_ref_bytes,
         result_images=result_images,
+        zip_bytes=zip_bytes,
     )

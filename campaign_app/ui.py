@@ -1,6 +1,3 @@
-from io import BytesIO
-import zipfile
-
 import streamlit as st
 
 from campaign_app.config import (
@@ -12,6 +9,7 @@ from campaign_app.config import (
     STYLE_PROMPT_PRESETS,
 )
 from campaign_app.models import CampaignInputs, CampaignResult
+from campaign_app.zip_utils import build_campaign_zip
 
 
 def render_header() -> None:
@@ -142,7 +140,7 @@ def render_results(result: CampaignResult) -> None:
 
     st.subheader("Resultados del shooting")
     if result.result_images:
-        zip_bytes = _build_campaign_zip(result.result_images)
+        zip_bytes = result.zip_bytes or _build_campaign_zip(result.result_images)
         st.download_button(
             label="Descargar campana completa (ZIP)",
             data=zip_bytes,
@@ -166,8 +164,4 @@ def render_results(result: CampaignResult) -> None:
 
 
 def _build_campaign_zip(images: list[bytes]) -> bytes:
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
-        for idx, image_bytes in enumerate(images, start=1):
-            zip_file.writestr(f"shooting_result_{idx}.png", image_bytes)
-    return zip_buffer.getvalue()
+    return build_campaign_zip(images)

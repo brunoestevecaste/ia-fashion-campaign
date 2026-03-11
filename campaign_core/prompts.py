@@ -14,7 +14,29 @@ Requirements:
 """
 
 
-def build_shoot_prompts_request(style, location):
+def build_shoot_prompts_request(style, location, prompt_count=4):
+    if prompt_count < 1:
+        raise ValueError("prompt_count debe ser >= 1.")
+
+    mandatory_variations = [
+        "full body + walking pose",
+        "medium shot + seated pose",
+        "low-angle shot + static pose",
+        "detail shot + in-motion pose",
+    ]
+    if prompt_count > len(mandatory_variations):
+        raise ValueError(
+            f"prompt_count maximo soportado: {len(mandatory_variations)}."
+        )
+
+    selected_variations = mandatory_variations[:prompt_count]
+    variations_block = "\n".join(
+        f"{idx}) {variation}" for idx, variation in enumerate(selected_variations, start=1)
+    )
+    prompt_placeholders = ", ".join(
+        f'"prompt {idx}"' for idx in range(1, prompt_count + 1)
+    )
+
     return f"""
 You are a world-class high-fashion creative director and Vogue-level editorial photographer.
 
@@ -23,7 +45,7 @@ CAMPAIGN INPUT:
 - Location: {location}
 
 TASK:
-Generate exactly 4 highly detailed image prompts in ENGLISH for a high-fashion photorealistic campaign.
+Generate exactly {prompt_count} highly detailed image prompts in ENGLISH for a high-fashion photorealistic campaign.
 The final generation system will receive:
 1) A garment reference photo.
 2) A single model reference photo.
@@ -39,7 +61,7 @@ So your prompts must focus on scene direction only:
 
 Creative constraints:
 - Respect and amplify the user inputs for style and location.
-- Keep all 4 prompts visually coherent as one campaign narrative.
+- Keep all {prompt_count} prompts visually coherent as one campaign narrative.
 - Every prompt must target SQUARE framing (1:1) and print-ready 4K detail.
 - The look must be strictly photorealistic (no illustration, no CGI, no surreal distortion).
 - Include premium fashion-photography language: lens choice, camera height/angle, body language,
@@ -54,10 +76,7 @@ Visual direction must be consistent across all prompts:
 - premium high-fashion editorial quality suitable for print magazine
 
 Use these mandatory variations:
-1) full body + walking pose
-2) medium shot + seated pose
-3) low-angle shot + static pose
-4) detail shot + in-motion pose
+{variations_block}
 
 For each prompt, explicitly include:
 - framing and shot scale
@@ -70,7 +89,7 @@ For each prompt, explicitly include:
 
 Return ONLY valid JSON using this exact format:
 {{
-  "prompts": ["prompt 1", "prompt 2", "prompt 3", "prompt 4"]
+  "prompts": [{prompt_placeholders}]
 }}
 """
 
