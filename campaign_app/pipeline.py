@@ -4,6 +4,7 @@ from typing import Callable
 
 from campaign_app.models import CampaignInputs, CampaignResult
 from campaign_app.zip_utils import build_campaign_zip
+from campaign_app.web_support import guess_mime_type
 from campaign_core.constants import DEFAULT_RENDER_MODE, RENDER_MODE_CONFIG
 from campaign_core.shooting_engine import FashionCampaignAI
 
@@ -60,6 +61,7 @@ def run_campaign_pipeline(
 
         with open(model_reference_path, "rb") as model_ref_file:
             model_ref_bytes = model_ref_file.read()
+        model_ref_mime = guess_mime_type(model_reference_path, default="image/png")
 
         result_images: list[bytes] = []
         for path in generated_paths:
@@ -70,6 +72,7 @@ def run_campaign_pipeline(
     return CampaignResult(
         prompts=prompts_for_render,
         model_ref_bytes=model_ref_bytes,
+        model_ref_mime=model_ref_mime,
         result_images=result_images,
         zip_bytes=zip_bytes,
     )

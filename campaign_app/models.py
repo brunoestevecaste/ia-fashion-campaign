@@ -1,13 +1,18 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Protocol
 
-from streamlit.runtime.uploaded_file_manager import UploadedFile
+
+class UploadedAsset(Protocol):
+    name: str
+
+    def getbuffer(self):
+        ...
 
 
 @dataclass
 class CampaignInputs:
     api_key: str
-    garment_file: Optional[UploadedFile]
+    garment_file: Optional[UploadedAsset]
     render_mode: str
     style_mode: str
     style_desc: str
@@ -15,12 +20,13 @@ class CampaignInputs:
     location_desc: str
     model_mode: str
     model_desc: str
-    model_image_file: Optional[UploadedFile]
+    model_image_file: Optional[UploadedAsset]
 
 
 @dataclass
 class CampaignResult:
     prompts: list[str]
     model_ref_bytes: bytes
+    model_ref_mime: str
     result_images: list[bytes]
     zip_bytes: bytes = b""

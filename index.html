@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fashion Campaign Shooting AI</title>
+    <meta
+      name="description"
+      content="Frontend premium para generar shootings editoriales de moda con direccion creativa asistida por IA."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero__halo hero__halo--left"></div>
+        <div class="hero__halo hero__halo--right"></div>
+        <div class="hero__copy">
+          <p class="eyebrow">Luxury Creative Engine</p>
+          <h1>Fashion Campaign Shooting AI</h1>
+          <p class="hero__lede">
+            Convierte una prenda en una campana editorial glamurosa con una experiencia
+            visual premium, pensada para equipos creativos, branding y moda.
+          </p>
+          <div class="hero__metrics" aria-label="Resumen de capacidades">
+            <article class="metric-card">
+              <span class="metric-card__value">4K</span>
+              <span class="metric-card__label">Modo final editorial</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-card__value">2-4</span>
+              <span class="metric-card__label">Looks por generacion</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-card__value">Live</span>
+              <span class="metric-card__label">Panel de progreso y resultados</span>
+            </article>
+          </div>
+        </div>
+        <aside class="hero__editorial panel">
+          <span class="badge badge--wine">Frontend Preview</span>
+          <p class="hero__editorial-kicker">Direction board</p>
+          <h2>Lujo contemporaneo con pulso editorial.</h2>
+          <p>
+            Esta version reproduce el flujo completo de la app con una experiencia
+            web tradicional en HTML, CSS y JavaScript conectada al pipeline real
+            de Python para generar resultados editoriales.
+          </p>
+        </aside>
+      </header>
+
+      <main class="workspace">
+        <section class="panel panel--form">
+          <div class="panel__header">
+            <div>
+              <p class="section-kicker">Creative setup</p>
+              <h2>Construye el shooting</h2>
+            </div>
+            <span class="badge">Single page luxury flow</span>
+          </div>
+
+          <form id="campaign-form" class="campaign-form" novalidate>
+            <div class="field" id="field-api-key">
+              <label for="api-key">Google API Key</label>
+              <input
+                id="api-key"
+                name="apiKey"
+                type="password"
+                autocomplete="off"
+                placeholder="AIza..."
+              />
+              <p class="field__help">No se guarda. Solo se usa durante la sesion activa.</p>
+              <p class="field__error" aria-live="polite"></p>
+            </div>
+
+            <div class="field" id="field-garment-file">
+              <label for="garment-file">Fotografia de la prenda</label>
+              <label class="upload-dropzone" for="garment-file">
+                <input
+                  id="garment-file"
+                  name="garmentFile"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp"
+                />
+                <span class="upload-dropzone__eyebrow">Garment upload</span>
+                <span class="upload-dropzone__title">Arrastra o selecciona una imagen</span>
+                <span class="upload-dropzone__meta" id="garment-file-meta">
+                  JPG, PNG o WEBP
+                </span>
+              </label>
+              <p class="field__error" aria-live="polite"></p>
+            </div>
+
+            <section class="form-section">
+              <div class="form-section__header">
+                <div>
+                  <p class="section-kicker">Render mode</p>
+                  <h3>Modo de generacion</h3>
+                </div>
+                <p class="form-section__copy">
+                  Final produce 4 imagenes 4K. Draft acelera iteracion con 2 imagenes 1K.
+                </p>
+              </div>
+              <div class="segmented-control" role="radiogroup" aria-label="Modo de generacion">
+                <label class="segment">
+                  <input type="radio" name="renderMode" value="Final" checked />
+                  <span>Final</span>
+                </label>
+                <label class="segment">
+                  <input type="radio" name="renderMode" value="Draft" />
+                  <span>Draft</span>
+                </label>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <div class="form-section__header">
+                <div>
+                  <p class="section-kicker">Style direction</p>
+                  <h3>Estilo de campana</h3>
+                </div>
+              </div>
+              <div class="segmented-control" role="radiogroup" aria-label="Modo de estilo">
+                <label class="segment">
+                  <input type="radio" name="styleMode" value="preset" checked />
+                  <span>Preset optimizado</span>
+                </label>
+                <label class="segment">
+                  <input type="radio" name="styleMode" value="custom" />
+                  <span>Prompt personalizado</span>
+                </label>
+              </div>
+              <div class="field mode-panel" data-panel="style" data-value="preset">
+                <label for="style-preset">Selecciona un estilo por defecto</label>
+                <select id="style-preset" name="stylePreset"></select>
+              </div>
+              <div class="field mode-panel" data-panel="style" data-value="custom" hidden>
+                <label for="style-custom">Prompt de estilo personalizado</label>
+                <textarea
+                  id="style-custom"
+                  name="styleCustom"
+                  rows="5"
+                  placeholder="Describe una direccion creativa editorial, de lujo y photorealista."
+                ></textarea>
+                <p class="field__error" aria-live="polite"></p>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <div class="form-section__header">
+                <div>
+                  <p class="section-kicker">Location narrative</p>
+                  <h3>Ubicacion del shooting</h3>
+                </div>
+              </div>
+              <div class="segmented-control" role="radiogroup" aria-label="Modo de ubicacion">
+                <label class="segment">
+                  <input type="radio" name="locationMode" value="preset" checked />
+                  <span>Preset optimizado</span>
+                </label>
+                <label class="segment">
+                  <input type="radio" name="locationMode" value="custom" />
+                  <span>Prompt personalizado</span>
+                </label>
+              </div>
+              <div class="field mode-panel" data-panel="location" data-value="preset">
+                <label for="location-preset">Selecciona una ubicacion por defecto</label>
+                <select id="location-preset" name="locationPreset"></select>
+              </div>
+              <div class="field mode-panel" data-panel="location" data-value="custom" hidden>
+                <label for="location-custom">Prompt de ubicacion personalizado</label>
+                <textarea
+                  id="location-custom"
+                  name="locationCustom"
+                  rows="5"
+                  placeholder="Describe el entorno, la atmosfera y la calidad de luz."
+                ></textarea>
+                <p class="field__error" aria-live="polite"></p>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <div class="form-section__header">
+                <div>
+                  <p class="section-kicker">Model reference</p>
+                  <h3>Referencia del modelo</h3>
+                </div>
+              </div>
+              <div class="segmented-control segmented-control--triple" role="radiogroup" aria-label="Modo de referencia de modelo">
+                <label class="segment">
+                  <input type="radio" name="modelMode" value="preset" checked />
+                  <span>Preset de descripcion</span>
+                </label>
+                <label class="segment">
+                  <input type="radio" name="modelMode" value="custom" />
+                  <span>Descripcion personalizada</span>
+                </label>
+                <label class="segment">
+                  <input type="radio" name="modelMode" value="upload" />
+                  <span>Subir imagen</span>
+                </label>
+              </div>
+              <div class="field mode-panel" data-panel="model" data-value="preset">
+                <label for="model-preset">Selecciona una descripcion por defecto</label>
+                <select id="model-preset" name="modelPreset"></select>
+              </div>
+              <div class="field mode-panel" data-panel="model" data-value="custom" hidden>
+                <label for="model-custom">Descripcion fisica del modelo</label>
+                <textarea
+                  id="model-custom"
+                  name="modelCustom"
+                  rows="6"
+                  placeholder="Describe rasgos fisicos, cabello, tono de piel y presencia editorial."
+                ></textarea>
+                <p class="field__error" aria-live="polite"></p>
+              </div>
+              <div class="field mode-panel" data-panel="model" data-value="upload" hidden id="field-model-file">
+                <label for="model-file">Sube una imagen del modelo</label>
+                <label class="upload-dropzone upload-dropzone--soft" for="model-file">
+                  <input
+                    id="model-file"
+                    name="modelFile"
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp"
+                  />
+                  <span class="upload-dropzone__eyebrow">Model upload</span>
+                  <span class="upload-dropzone__title">Añade una referencia facial</span>
+                  <span class="upload-dropzone__meta" id="model-file-meta">
+                    Se usara como base de consistencia visual
+                  </span>
+                </label>
+                <p class="field__error" aria-live="polite"></p>
+              </div>
+            </section>
+
+            <div class="form-footer">
+              <div class="form-footer__note">
+                <p class="section-kicker">Execution</p>
+                <p>
+                  Este frontend ya esta preparado para ejecutar el backend Python real,
+                  mostrar logs del pipeline y descargar los resultados finales.
+                </p>
+              </div>
+              <button id="generate-button" type="submit" class="button button--primary">
+                <span class="button__label">Generar shooting</span>
+                <span class="button__shine"></span>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="workspace__side">
+          <section class="panel panel--status">
+            <div class="panel__header">
+              <div>
+                <p class="section-kicker">Session status</p>
+                <h2>Pipeline de generacion</h2>
+              </div>
+              <span class="status-pill" id="status-pill">Idle</span>
+            </div>
+
+            <div class="progress-track" aria-hidden="true">
+              <div class="progress-track__fill" id="progress-fill"></div>
+            </div>
+
+            <ol class="log-list" id="log-list" aria-live="polite">
+              <li>Esperando configuracion creativa.</li>
+            </ol>
+
+            <div class="summary-grid">
+              <article class="summary-card">
+                <span class="summary-card__label">Modo</span>
+                <span class="summary-card__value" id="summary-render">Final</span>
+              </article>
+              <article class="summary-card">
+                <span class="summary-card__label">Looks</span>
+                <span class="summary-card__value" id="summary-count">4</span>
+              </article>
+              <article class="summary-card">
+                <span class="summary-card__label">Estilo</span>
+                <span class="summary-card__value" id="summary-style">Preset</span>
+              </article>
+              <article class="summary-card">
+                <span class="summary-card__label">Modelo</span>
+                <span class="summary-card__value" id="summary-model">Preset</span>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel panel--preview">
+            <div class="panel__header">
+              <div>
+                <p class="section-kicker">Live preview</p>
+                <h2>Activos de referencia</h2>
+              </div>
+            </div>
+
+            <div class="asset-preview-grid">
+              <figure class="asset-card">
+                <figcaption>Prenda</figcaption>
+                <div class="asset-card__image-frame">
+                  <img id="garment-preview-image" alt="Preview de la prenda" hidden />
+                  <div class="asset-card__placeholder" id="garment-preview-placeholder">
+                    Sube una prenda para ver preview
+                  </div>
+                </div>
+              </figure>
+              <figure class="asset-card">
+                <figcaption>Modelo</figcaption>
+                <div class="asset-card__image-frame">
+                  <img id="model-preview-image" alt="Preview del modelo" hidden />
+                  <div class="asset-card__placeholder" id="model-preview-placeholder">
+                    Usa preset o sube una referencia
+                  </div>
+                </div>
+              </figure>
+            </div>
+          </section>
+        </aside>
+      </main>
+
+      <section class="results" id="results" hidden>
+        <div class="results__header">
+          <div>
+            <p class="section-kicker">Campaign output</p>
+            <h2>Resultados del shooting</h2>
+          </div>
+          <button id="download-zip" class="button button--secondary" type="button">
+            Descargar campana completa
+          </button>
+        </div>
+
+        <div class="results__grid">
+          <section class="panel">
+            <div class="panel__header">
+              <div>
+                <p class="section-kicker">Generated prompts</p>
+                <h3>Direccion creativa</h3>
+              </div>
+            </div>
+            <ol class="prompt-list" id="prompts-list"></ol>
+          </section>
+
+          <section class="panel">
+            <div class="panel__header">
+              <div>
+                <p class="section-kicker">Model consistency</p>
+                <h3>Referencia de modelo</h3>
+              </div>
+            </div>
+            <div class="model-reference-frame">
+              <img id="model-reference-image" alt="Referencia del modelo generada" />
+            </div>
+          </section>
+        </div>
+
+        <section class="panel panel--gallery">
+          <div class="panel__header">
+            <div>
+              <p class="section-kicker">Editorial gallery</p>
+              <h3>Looks generados</h3>
+            </div>
+          </div>
+          <div class="gallery-grid" id="gallery-grid"></div>
+        </section>
+      </section>
+    </div>
+
+    <noscript>
+      <div class="noscript-banner">
+        Esta experiencia necesita JavaScript para mostrar el flujo dinamico del frontend.
+      </div>
+    </noscript>
+
+    <script src="app.js"></script>
+  </body>
+</html>
