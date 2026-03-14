@@ -7,6 +7,7 @@ import requests
 from google import genai
 
 from campaign_core.constants import GEMINI_API_KEY
+from campaign_app.security import redact_sensitive_text
 
 
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
@@ -29,6 +30,10 @@ def _sleep_with_backoff(attempt: int, base_seconds: float) -> None:
     delay = base_seconds * (2 ** (attempt - 1))
     jitter = random.uniform(0, min(1.0, delay * 0.2))
     time.sleep(delay + jitter)
+
+
+def _safe_error_text(value) -> str:
+    return redact_sensitive_text(str(value))
 
 
 def generate_image_via_rest(
@@ -72,7 +77,8 @@ def generate_image_via_rest(
                 last_error = exc
                 if attempt == max_retries:
                     raise RuntimeError(
-                        f"Error de conexion al generar imagen {image_size} tras {max_retries} intentos: {exc}"
+                        "Error de conexion al generar imagen "
+                        f"{image_size} tras {max_retries} intentos: {_safe_error_text(exc)}"
                     ) from exc
                 _sleep_with_backoff(attempt=attempt, base_seconds=backoff_base_seconds)
                 continue
@@ -105,7 +111,8 @@ def generate_image_via_rest(
                 continue
 
             last_error = RuntimeError(
-                f"Error REST {response.status_code} en generacion {image_size}: {response.text[:400]}"
+                "Error REST "
+                f"{response.status_code} en generacion {image_size}: {_safe_error_text(response.text[:400])}"
             )
             if response.status_code not in RETRYABLE_STATUS_CODES or attempt == max_retries:
                 raise last_error
@@ -115,5 +122,6 @@ def generate_image_via_rest(
             managed_session.close()
 
     raise RuntimeError(
-        f"No se pudo generar imagen {image_size} tras {max_retries} intentos. Error final: {last_error}"
+        "No se pudo generar imagen "
+        f"{image_size} tras {max_retries} intentos. Error final: {_safe_error_text(last_error)}"
     )

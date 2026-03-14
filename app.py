@@ -1,6 +1,7 @@
 import streamlit as st
 
 from campaign_app.pipeline import run_campaign_pipeline
+from campaign_app.security import redact_sensitive_text
 from campaign_app.theme import apply_theme, configure_page
 from campaign_app.ui import render_header, render_input_form, render_results
 from campaign_app.validation import validate_inputs
@@ -36,7 +37,7 @@ def main() -> None:
                     status.update(label="Shooting completado", state="complete")
                 except Exception as exc:
                     status.update(label="Error durante la generacion", state="error")
-                    st.error(f"No se pudo completar el shooting: {exc}")
+                    st.error(f"No se pudo completar el shooting: {redact_sensitive_text(str(exc))}")
 
     if st.session_state["campaign_result"] is not None:
         render_results(st.session_state["campaign_result"])

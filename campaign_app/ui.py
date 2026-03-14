@@ -21,8 +21,8 @@ def render_input_form() -> CampaignInputs:
     api_key = st.text_input(
         "Google API Key",
         type="password",
-        help="No se guarda; solo se usa durante esta ejecucion.",
-        placeholder="AIza...",
+        help="Opcional si GEMINI_API_KEY ya esta definida en el servidor. No se guarda; solo se usa durante esta ejecucion.",
+        placeholder="Opcional si el servidor ya tiene la clave",
     )
 
     garment_file = st.file_uploader(

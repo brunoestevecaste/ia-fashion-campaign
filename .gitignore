@@ -17,6 +17,13 @@ env/
 
 # Local app artifacts
 model/
+.cache/
+.env
+.env.*
+*.log
+*.pem
+*.key
+*.crt
 *.png
 *.jpg
 *.jpeg

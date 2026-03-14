@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import cgi
 import json
+import os
 import threading
 import time
 import uuid
@@ -14,6 +15,7 @@ from urllib.parse import parse_qs, urlparse
 
 from campaign_app.models import CampaignResult
 from campaign_app.pipeline import run_campaign_pipeline
+from campaign_app.security import redact_sensitive_text
 from campaign_app.validation import validate_inputs
 from campaign_app.web_support import (
     InMemoryUpload,
@@ -25,6 +27,13 @@ from campaign_app.web_support import (
 
 ROOT_DIR = Path(__file__).resolve().parent
 JOB_TTL_SECONDS = 60 * 60
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+ALLOWED_STATIC_FILES = {
+    "/",
+    "/index.html",
+    "/styles.css",
+    "/app.js",
+}
 JOBS: dict[str, "CampaignJob"] = {}
 JOBS_LOCK = threading.Lock()
 
@@ -105,7 +114,7 @@ def run_job(job: CampaignJob, inputs) -> None:
     try:
         result = run_campaign_pipeline(inputs, logger=job.append_log)
     except Exception as exc:
-        job.mark_error(str(exc))
+        job.mark_error(redact_sensitive_text(str(exc)))
         return
     job.mark_complete(result)
 
@@ -117,17 +126,26 @@ class FashionCampaignHandler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
 
-        if parsed.path == "/":
-            self.path = "/index.html"
-            return super().do_GET()
-
         if parsed.path == "/api/health":
-            return self.send_json(HTTPStatus.OK, {"status": "ok"})
+            return self.send_json(
+                HTTPStatus.OK,
+                {
+                    "status": "ok",
+                    "serverApiKeyConfigured": bool(os.getenv("GEMINI_API_KEY")),
+                },
+            )
 
         if parsed.path.startswith("/api/campaigns/"):
             return self.handle_campaign_get(parsed)
 
-        return super().do_GET()
+        if parsed.path in ALLOWED_STATIC_FILES:
+            self.path = "/index.html" if parsed.path == "/" else parsed.path
+            return super().do_GET()
+
+        if is_forbidden_path(parsed.path):
+            return self.send_json(HTTPStatus.NOT_FOUND, {"error": "Ruta no encontrada."})
+
+        return self.send_json(HTTPStatus.NOT_FOUND, {"error": "Ruta no encontrada."})
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
@@ -256,6 +274,14 @@ class FashionCampaignHandler(SimpleHTTPRequestHandler):
         if not content_type.startswith("multipart/form-data"):
             raise ValueError("Content-Type invalido. Se esperaba multipart/form-data.")
 
+        content_length = int(self.headers.get("Content-Length", "0") or "0")
+        if content_length <= 0:
+            raise ValueError("Solicitud vacia o tamano no valido.")
+        if content_length > MAX_UPLOAD_BYTES:
+            raise ValueError(
+                f"Solicitud demasiado grande. Limite actual: {MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
+            )
+
         form = cgi.FieldStorage(
             fp=self.rfile,
             headers=self.headers,
@@ -311,6 +337,12 @@ class FashionCampaignHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
+    def end_headers(self) -> None:
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("X-Frame-Options", "DENY")
+        super().end_headers()
+
 
 def build_upload(file_payload: dict | None) -> InMemoryUpload | None:
     if not file_payload:
@@ -331,11 +363,30 @@ def mime_to_extension(mime_type: str) -> str:
     return ""
 
 
+def is_forbidden_path(path: str) -> bool:
+    if path.startswith("/.") or "/." in path:
+        return True
+    normalized = os.path.normpath(path)
+    if normalized.startswith("..") or "/.." in normalized:
+        return True
+    return False
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Fashion Campaign frontend + Python backend server")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument(
+        "--allow-external",
+        action="store_true",
+        help="Permite escuchar fuera de localhost. Por seguridad, por defecto solo acepta 127.0.0.1.",
+    )
     args = parser.parse_args()
+
+    if args.host not in {"127.0.0.1", "localhost"} and not args.allow_external:
+        raise SystemExit(
+            "Refusing to bind outside localhost without --allow-external."
+        )
 
     server = ThreadingHTTPServer((args.host, args.port), FashionCampaignHandler)
     print(f"Serving on http://{args.host}:{args.port}")

@@ -1,10 +1,11 @@
+from campaign_core.constants import GEMINI_API_KEY
 from campaign_app.models import CampaignInputs
 
 
 def validate_inputs(inputs: CampaignInputs) -> list[str]:
     missing_fields: list[str] = []
 
-    if not inputs.api_key.strip():
+    if not inputs.api_key.strip() and not GEMINI_API_KEY:
         missing_fields.append("API key de Google")
     if inputs.garment_file is None:
         missing_fields.append("fotografia de la prenda")
@@ -18,4 +19,3 @@ def validate_inputs(inputs: CampaignInputs) -> list[str]:
         missing_fields.append("imagen del modelo")
 
     return missing_fields
-

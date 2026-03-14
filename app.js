@@ -115,6 +115,7 @@ const MODEL_MODE_LABELS = {
 const state = {
   isGenerating: false,
   currentJobId: "",
+  serverApiKeyConfigured: false,
   uploadUrls: {
     garment: "",
     model: "",
@@ -143,6 +144,8 @@ const elements = {
   summaryCount: document.getElementById("summary-count"),
   summaryStyle: document.getElementById("summary-style"),
   summaryModel: document.getElementById("summary-model"),
+  apiKeyInput: document.getElementById("api-key"),
+  apiKeyHelp: document.getElementById("api-key-help"),
   apiKeyField: document.getElementById("field-api-key"),
   garmentField: document.getElementById("field-garment-file"),
   modelFileField: document.getElementById("field-model-file"),
@@ -151,6 +154,7 @@ const elements = {
 document.addEventListener("DOMContentLoaded", init);
 
 function init() {
+  void initServerCapabilities();
   populateSelect(document.getElementById("style-preset"), presetData.styles);
   populateSelect(document.getElementById("location-preset"), presetData.locations);
   populateSelect(document.getElementById("model-preset"), presetData.models);
@@ -165,6 +169,23 @@ function init() {
   refreshPreviewPanels();
   setStatus("idle", "Idle");
   writeLogs(["Esperando configuracion creativa."]);
+}
+
+async function initServerCapabilities() {
+  try {
+    const response = await fetch(`${API.createCampaign.replace("/campaigns", "/health")}?t=${Date.now()}`, {
+      cache: "no-store",
+    });
+    const data = await parseJsonResponse(response);
+    if (!response.ok) {
+      return;
+    }
+
+    state.serverApiKeyConfigured = Boolean(data.serverApiKeyConfigured);
+    updateApiKeyFieldState();
+  } catch (error) {
+    console.warn("No se pudo consultar la configuracion del servidor.", error);
+  }
 }
 
 function bindEvents() {
@@ -401,8 +422,8 @@ async function handleGenerate() {
 function validatePayload(payload) {
   let valid = true;
 
-  if (!payload.apiKey) {
-    setFieldError(elements.apiKeyField, "Introduce una Google API Key.");
+  if (!payload.apiKey && !state.serverApiKeyConfigured) {
+    setFieldError(elements.apiKeyField, "Introduce una Google API Key o configura GEMINI_API_KEY en el servidor.");
     valid = false;
   }
 
@@ -438,6 +459,22 @@ function validatePayload(payload) {
   }
 
   return valid;
+}
+
+function updateApiKeyFieldState() {
+  if (!elements.apiKeyInput || !elements.apiKeyHelp) {
+    return;
+  }
+
+  if (state.serverApiKeyConfigured) {
+    elements.apiKeyInput.placeholder = "Opcional: el servidor ya tiene una clave configurada";
+    elements.apiKeyHelp.textContent =
+      "Opcional: el servidor ya tiene GEMINI_API_KEY configurada. Solo rellena este campo si quieres usar otra clave.";
+    return;
+  }
+
+  elements.apiKeyInput.placeholder = "Pega tu API key aqui";
+  elements.apiKeyHelp.textContent = "No se guarda. Solo se usa durante la sesion activa.";
 }
 
 async function createCampaign(payload) {

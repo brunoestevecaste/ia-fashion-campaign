@@ -15,7 +15,7 @@ class TestWebSupport(unittest.TestCase):
         garment_upload = InMemoryUpload(name="garment.png", content=b"garment")
         model_upload = InMemoryUpload(name="model.jpg", content=b"model")
         payload = {
-            "apiKey": "AIza-test",
+            "apiKey": "test-google-api-key",
             "renderMode": "Final",
             "styleMode": "Preset optimizado",
             "styleDesc": "style prompt",
@@ -27,7 +27,7 @@ class TestWebSupport(unittest.TestCase):
 
         inputs = build_campaign_inputs_from_api_payload(payload, garment_upload, model_upload)
 
-        self.assertEqual(inputs.api_key, "AIza-test")
+        self.assertEqual(inputs.api_key, "test-google-api-key")
         self.assertEqual(inputs.render_mode, "Final")
         self.assertEqual(inputs.style_mode, "Preset optimizado")
         self.assertEqual(inputs.location_mode, "Prompt personalizado")
