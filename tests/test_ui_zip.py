@@ -2,13 +2,13 @@ import io
 import unittest
 import zipfile
 
-from campaign_app.ui import _build_campaign_zip
+from campaign_app.zip_utils import build_campaign_zip
 
 
 class TestCampaignZip(unittest.TestCase):
     def test_build_campaign_zip_contains_four_images(self):
         images = [b"img-1", b"img-2", b"img-3", b"img-4"]
-        zip_bytes = _build_campaign_zip(images)
+        zip_bytes = build_campaign_zip(images)
 
         with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as archive:
             names = archive.namelist()
@@ -26,4 +26,3 @@ class TestCampaignZip(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

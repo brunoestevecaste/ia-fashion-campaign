@@ -140,7 +140,7 @@ def render_results(result: CampaignResult) -> None:
 
     st.subheader("Resultados del shooting")
     if result.result_images:
-        zip_bytes = result.zip_bytes or _build_campaign_zip(result.result_images)
+        zip_bytes = result.zip_bytes or build_campaign_zip(result.result_images)
         st.download_button(
             label="Descargar campana completa (ZIP)",
             data=zip_bytes,
@@ -161,7 +161,3 @@ def render_results(result: CampaignResult) -> None:
                 mime="image/png",
                 key=f"download_{idx}",
             )
-
-
-def _build_campaign_zip(images: list[bytes]) -> bytes:
-    return build_campaign_zip(images)

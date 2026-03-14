@@ -16,7 +16,6 @@ El valor principal del proyecto es reducir de forma drástica el tiempo y el cos
 ## Estructura del proyecto
 
 - `app.py`: punto de entrada de Streamlit y orquestacion de alto nivel.
-- `script.py`: fachada/entrypoint compatible que expone `FashionCampaignAI`.
 - `campaign_app/config.py`: presets y constantes de la UI.
 - `campaign_app/theme.py`: configuracion de pagina y estilos CSS.
 - `campaign_app/ui.py`: render de inputs y resultados en Streamlit.

@@ -5,7 +5,7 @@ from typing import Callable
 from campaign_app.models import CampaignInputs, CampaignResult
 from campaign_app.zip_utils import build_campaign_zip
 from campaign_core.constants import DEFAULT_RENDER_MODE, RENDER_MODE_CONFIG
-from script import FashionCampaignAI
+from campaign_core.shooting_engine import FashionCampaignAI
 
 
 def run_campaign_pipeline(

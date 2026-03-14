@@ -117,13 +117,3 @@ def generate_image_via_rest(
     raise RuntimeError(
         f"No se pudo generar imagen {image_size} tras {max_retries} intentos. Error final: {last_error}"
     )
-
-
-def generate_image_4k_via_rest(api_key, image_model, parts, aspect_ratio):
-    return generate_image_via_rest(
-        api_key=api_key,
-        image_model=image_model,
-        parts=parts,
-        aspect_ratio=aspect_ratio,
-        image_size="4K",
-    )
